@@ -24,7 +24,7 @@ public class ShiftsController : ControllerBase
         return Ok(shifts);
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("{id:int}")]
     public async Task<IActionResult> GetShiftById([FromRoute] int id)
     {
         var shift = await _shiftService.GetShiftByIdAsync(id);
@@ -46,7 +46,7 @@ public class ShiftsController : ControllerBase
     }
 
     [HttpPut]
-    [Route("{id}")]
+    [Route("{id:int}")]
     public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateShiftDto updateDto)
     {
         var updatedShift = await _shiftService.UpdateShiftAsync(id, updateDto);
@@ -60,7 +60,7 @@ public class ShiftsController : ControllerBase
     }
 
     [HttpDelete]
-    [Route("{id}")]
+    [Route("{id:int}")]
     public async Task<IActionResult> Delete([FromRoute] int id)
     {
         var deletedShift = await _shiftService.DeleteShiftAsync(id);
