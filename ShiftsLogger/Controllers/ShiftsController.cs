@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
 using ShiftsLogger.Dtos;
-using ShiftsLogger.Models;
+using ShiftsLogger.Services;
 
 namespace ShiftsLogger.Controllers;
 
@@ -15,35 +9,25 @@ namespace ShiftsLogger.Controllers;
 
 public class ShiftsController : ControllerBase
 {
-    private readonly ShiftsContext _context;
-    public ShiftsController(ShiftsContext context)
+    private readonly ShiftService _shiftService;
+
+    public ShiftsController(ShiftService shiftService)
     {
-        _context = context;
+        _shiftService = shiftService;
     }
 
     [HttpGet]
-    public IActionResult GetAll()
+    public async Task<IActionResult> GetAllShifts()
     {
-        var shifts = _context.Shifts
-                    .Include(s => s.Employee)
-                    .Select(s => new ShiftDto
-                    {
-                        ShiftId = s.ShiftId,
-                        Date = s.Date,
-                        PunchIn = s.PunchIn,
-                        PunchOut = s.PunchOut,
-                        EmployeeId = s.EmployeeId,
-                        EmployeeFullName = s.Employee.FirstName + " " + s.Employee.LastName,
-                    })
-                    .ToList();
+        var shifts = await _shiftService.GetAllShiftsAsync();
 
         return Ok(shifts);
     }
 
     [HttpGet("{id}")]
-    public IActionResult GetById([FromRoute] int id)
+    public async Task<IActionResult> GetShiftById([FromRoute] int id)
     {
-        var shift = _context.Shifts.Find(id);
+        var shift = await _shiftService.GetShiftByIdAsync(id);
 
         if (shift == null)
         {
@@ -53,108 +37,41 @@ public class ShiftsController : ControllerBase
         return Ok(shift);
     }
 
-}
-
-/*
-[Route("api/[controller]")]
-[ApiController]
-public class ShiftsController : ControllerBase
-{
-    private readonly ShiftsContext _context;
-
-    public ShiftsController(ShiftsContext context)
-    {
-        _context = context;
-    }
-
-    // GET: api/Shifts
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<Shift>>> GetShifts()
-    {
-        return await _context.Shifts.ToListAsync();
-    }
-
-    // GET: api/Shifts/5
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Shift>> GetShift(int id)
-    {
-        var shift = await _context.Shifts.FindAsync(id);
-
-        if (shift == null)
-        {
-            return NotFound();
-        }
-
-        return shift;
-    }
-
-    // PUT: api/Shifts/5
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    [HttpPut("{id}")]
-    public async Task<IActionResult> PutShift(int id, Shift shift)
-    {
-        if (id != shift.ShiftId)
-        {
-            return BadRequest();
-        }
-
-        _context.Entry(shift).State = EntityState.Modified;
-
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!ShiftExists(id))
-            {
-                return NotFound();
-            }
-            else
-            {
-                throw;
-            }
-        }
-
-        return NoContent();
-    }
-
-    // POST: api/Shifts
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPost]
-    public async Task<ActionResult<Shift>> PostShift(Shift shift)
+    public async Task<IActionResult> CreateShift([FromBody] CreateShiftDto createShiftDto)
     {
-        if (_context.Shifts == null)
-        {
-            return Problem("Entity set 'ShiftContext.Shifts' is null.");
-        }
+        var shift = await _shiftService.CreateShiftAsync(createShiftDto);
 
-        _context.Shifts.Add(shift);
-        await _context.SaveChangesAsync();
-
-        
-        return CreatedAtAction(nameof(PostShift), new { id = shift.ShiftId }, shift);
+        return CreatedAtAction(nameof(GetShiftById), new { id = shift.ShiftId }, shift);
     }
 
-    // DELETE: api/Shifts/5
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteShift(int id)
+    [HttpPut]
+    [Route("{id}")]
+    public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateShiftDto updateDto)
     {
-        var shift = await _context.Shifts.FindAsync(id);
-        if (shift == null)
+        var updatedShift = await _shiftService.UpdateShiftAsync(id, updateDto);
+
+        if (updatedShift == null)
         {
             return NotFound();
         }
 
-        _context.Shifts.Remove(shift);
-        await _context.SaveChangesAsync();
+        return Ok(updatedShift);
+    }
+
+    [HttpDelete]
+    [Route("{id}")]
+    public async Task<IActionResult> Delete([FromRoute] int id)
+    {
+        var deletedShift = await _shiftService.DeleteShiftAsync(id);
+
+        if (deletedShift == null)
+        {
+            return NotFound();
+        }
 
         return NoContent();
     }
 
-    private bool ShiftExists(int id)
-    {
-        return _context.Shifts.Any(e => e.ShiftId == id);
-    }
 }
-*/
+
